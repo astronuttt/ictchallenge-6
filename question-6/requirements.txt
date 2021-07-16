@@ -1,0 +1,5 @@
+SQLAlchemy==1.4.21
+fastapi==0.66.0
+uvicorn==0.14.0
+python-multipart==0.0.5
+aiofiles==0.7.0

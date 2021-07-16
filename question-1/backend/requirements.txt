@@ -1,0 +1,17 @@
+asgiref==3.4.1
+click==8.0.1
+fastapi==0.66.0
+greenlet==1.1.0
+h11==0.12.0
+httptools==0.2.0
+numpy==1.21.0
+pydantic==1.8.2
+python-dotenv==0.18.0
+PyYAML==5.4.1
+SQLAlchemy==1.4.21
+starlette==0.14.2
+typing-extensions==3.10.0.0
+uvicorn==0.14.0
+uvloop==0.15.3
+watchgod==0.7
+websockets==9.1

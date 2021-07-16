@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<script src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+<script src="https://unpkg.com/tailwindcss-jit-cdn"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    window.ENV = {
+        serverAddress: 'http://127.0.0.1:8000/',
+        firstTurn: -1,
+    };
+    const Request = axios.create({
+        baseURL: window.ENV.serverAddress,
+        timeout: 15000,
+    });
+</script>
+<style>
+    .boardBlock {
+        border-right: 1px #060606 solid;
+        border-bottom: 1px #060606 solid;
+    }
+
+    .gameRow:first-child .boardBlock {
+        border-top: 1px #060606 solid;
+    }
+
+    .gameRow .boardBlock:first-child {
+        border-left: 1px #060606 solid;
+    }
+
+    .boardBlock:last-child,
+    .gameRow:last-child .boardBlock {
+        border: unset !important;
+    }
+
+    .piece {
+        border-radius: 100%;
+        width: 80%;
+        height: 80%;
+    }
+
+    .piece.black {
+        background-image: linear-gradient(to right,
+                #191e24,
+                #3c4753,
+                #1b384b,
+                #3c335b);
+        background-size: 300% 100%;
+        box-shadow: 2px 3px 4px 0 rgba(45, 54, 65, 0.3);
+    }
+
+    .piece.white {
+        background-color: white;
+        background-image: linear-gradient(to right,
+                #e7eaee,
+                #e7eaee,
+                #c3dae9,
+                #b8b1d3);
+        background-size: 300% 100%;
+        box-shadow: 2px 3px 4px 0 rgba(45, 54, 65, 0.3);
+    }
+
+    .piece.capture {
+        border: 1px red solid;
+    }
+
+    .piece.empty:hover {
+        cursor: pointer;
+        opacity: 0.5;
+
+        background-image: linear-gradient(to right,
+                #191e24,
+                #3c4753,
+                #1b384b,
+                #3c335b);
+        background-size: 300% 100%;
+        box-shadow: 2px 3px 4px 0 rgba(45, 54, 65, 0.3);
+    }
+</style>
+
+<body>
+    <div class="flex justify-center items-center w-full pt-4">
+        <div id="app"></div>
+    </div>
+    <script type="text/babel">
+        class GameBoard extends React.Component {
+            state = {
+                gameBoard: [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                ],
+                turn: window.ENV.firstTurn,
+                loading: false,
+                gameEnded: false,
+                gameStarted: false,
+                gameId: null,
+                captureStone: [-1, -1],
+            };
+            handleStartGame() {
+                Request.post('').then((res) => {
+                    this.setState({
+                        gameId: res.data.id,
+                        gameBoard: res.data.board,
+                        gameStarted: true,
+                        captureStone: [-1, -1],
+                    });
+                });
+            }
+
+            handleBlockClick(row, col) {
+                if (
+                    !this.state.gameEnded &&
+                    this.state.gameStarted &&
+                    !this.state.loading &&
+                    this.state.gameBoard[row][col] == 0
+                ) {
+                    this.putPiece(row, col);
+                    this.setState({ loading: true });
+                    Request.put('', {
+                        id: this.state.gameId,
+                        new_stone: [row, col],
+                    }).then((res) => {
+                        this.setState({ gameBoard: res.data.board, loading: false });
+                        if (res.data.captured_stone !== null) {
+                            this.setState({ captureStone: res.data.captured_stone });
+                            this.resetGame();
+                        }
+
+                        //   switch (res.data.status) {
+                        //     case 'loss':
+                        //       this.setState({ gameEnded: true });
+                        //       Swal.fire({
+                        //         title: 'You Won!',
+                        //         text: 'It was such a exciting game! Good job! ',
+                        //         icon: 'success',
+                        //         confirmButtonText: "Let's Play Again!",
+                        //       }).then((confirmed) => {
+                        //         this.resetGame();
+                        //       });
+                        //       break;
+                        //     case 'win':
+                        //       this.setState({ gameEnded: true });
+                        //       Swal.fire({
+                        //         title: 'You Lost!',
+                        //         text: "It was good game! let's try another chanse!",
+                        //         icon: 'error',
+                        //         confirmButtonText: 'Play Again!',
+                        //       }).then((confirmed) => {
+                        //         this.resetGame();
+                        //       });
+                        //       break;
+                        //     case 'finished':
+                        //       this.setState({ gameEnded: true });
+                        //       Swal.fire({
+                        //         title: 'This game has no winner!',
+                        //         text: 'Such a sensitive game! Wanna play another game?',
+                        //         icon: 'error',
+                        //         confirmButtonText: 'Play Again!',
+                        //       }).then((confirmed) => {
+                        //         this.resetGame();
+                        //       });
+                        //       break;
+                        //   }
+                        this.changeTurn();
+                    });
+                }
+            }
+            resetGame() {
+                this.setState({
+                    loading: false,
+                    gameEnded: false,
+                    gameStarted: false,
+                });
+            }
+            putPiece(row, col) {
+                let gBoard = [...this.state.gameBoard];
+                gBoard[row][col] = this.state.turn;
+                this.setState({ gameBoard: gBoard });
+                this.changeTurn();
+            }
+            changeTurn() {
+                this.setState({ turn: this.state.turn * -1 });
+            }
+            render() {
+                return (
+                    <div className="flex flex-col">
+                        <h1 className="text-center font-mono font-bold py-4 text-4xl">
+                            GO GAME
+                        </h1>
+                        {this.state.loading && (
+                            <span className="absolute top-16">loading...</span>
+                        )}
+                        <div className="bg-[#F2B06D]  w-auto inline-block border border-[#060606] pt-8 pl-8 rounded-[3px]">
+                            <div className="bg-[#F2B06D] h-[18rem] w-auto inline-block">
+                                {this.state.gameBoard.map((row, rowIndex) => {
+                                    return (
+                                        <div className="h-8 gameRow">
+                                            {row.map((block, columnIndex) => {
+                                                let pieceClass =
+                                                    block === 0
+                                                        ? 'empty'
+                                                        : block === -1
+                                                            ? 'black'
+                                                            : 'white';
+                                                return (
+                                                    <div
+                                                        className={`relative boardBlock inline-block text-center w-8 h-8 ${columnIndex != row.length - 1 && 'w-8 h-8'
+                                                            }`}
+                                                    >
+                                                        {((this.state.gameStarted &&
+                                                            this.state.captureStone[0] === -1) ||
+                                                            (!this.state.gameStarted &&
+                                                                !this.state.gameEnded &&
+                                                                this.state.captureStone[0] !== -1)) && (
+                                                                <div
+                                                                    onClick={() =>
+                                                                        this.handleBlockClick(rowIndex, columnIndex)
+                                                                    }
+                                                                    className={`piece w-8 h-8 -translate-y-1/2 -translate-x-1/2 ${pieceClass} ${this.state.captureStone[0] == rowIndex &&
+                                                                        this.state.captureStone[1] == columnIndex &&
+                                                                        'capture'
+                                                                        }`}
+                                                                ></div>
+                                                            )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div className="mt-5 flex justify-center">
+                            {!this.state.gameStarted && (
+                                <button
+                                    className="rounded-sm px-5 py-2 bg-indigo-500 text-white"
+                                    onClick={() => this.handleStartGame()}
+                                >
+                                    Start Game
+                                </button>
+                            )}
+                            {this.state.gameEnded && (
+                                <button
+                                    className="rounded-sm px-5 py-2 bg-indigo-500 text-white"
+                                    onClick={() => this.handleStartGame()}
+                                >
+                                    Restart The Game
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        ReactDOM.render(<GameBoard />, document.getElementById('app'));
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+et-xmlfile==1.1.0
+fakeredis==1.5.2
+openpyxl==3.0.7
+redis==3.5.3
+six==1.16.0
+sortedcontainers==2.4.0
